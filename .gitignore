@@ -1,0 +1,16 @@
+target/
+bin/
+!.mvn/wrapper/maven-wrapper.jar
+log/
+logs/
+*.log
+.classpath
+.project
+.settings/
+.vscode/
+.idea/
+*.iml
+*.iws
+
+# User asked not to include the DB (excluding migration scripts)
+src/main/resources/db/
