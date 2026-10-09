@@ -5,8 +5,8 @@ import com.example.api.dto.StudentResponseDto;
 import com.example.api.entity.Course;
 import com.example.api.entity.Student;
 import com.example.api.entity.Subject;
-import com.example.api.exception.DuplicateResourceException;
-import com.example.api.exception.ResourceNotFoundException;
+import com.example.api.exception.DuplicateException;
+import com.example.api.exception.NotFoundException;
 import com.example.api.repository.CourseRepository;
 import com.example.api.repository.StudentRepository;
 import com.example.api.repository.SubjectRepository;
@@ -31,16 +31,16 @@ public class StudentService {
 
     public StudentResponseDto getStudentById(Long id) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Student with ID " + id + " was not found."));
+                .orElseThrow(() -> new NotFoundException("Student with ID " + id + " was not found."));
         return mapToDto(student);
     }
 
     public void createStudent(StudentCreateDto dto) {
         if (studentRepository.existsByEmail(dto.getEmail())) {
-            throw new DuplicateResourceException("Email '" + dto.getEmail() + "' is already registered.");
+            throw new DuplicateException("Email '" + dto.getEmail() + "' is already registered.");
         }
         if (studentRepository.existsByUsername(dto.getUsername())) {
-            throw new DuplicateResourceException("Username '" + dto.getUsername() + "' is already registered.");
+            throw new DuplicateException("Username '" + dto.getUsername() + "' is already registered.");
         }
         Student student = new Student();
         student.setFullName(dto.getName());
@@ -53,18 +53,18 @@ public class StudentService {
 
     public void assignCourse(Long studentId, Long courseId) {
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Student with ID " + studentId + " was not found."));
+                .orElseThrow(() -> new NotFoundException("Student with ID " + studentId + " was not found."));
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new ResourceNotFoundException("Course with ID " + courseId + " was not found."));
+                .orElseThrow(() -> new NotFoundException("Course with ID " + courseId + " was not found."));
         student.setCourse(course);
         studentRepository.save(student);
     }
 
     public void enrollSubject(Long studentId, Long subjectId) {
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Student with ID " + studentId + " was not found."));
+                .orElseThrow(() -> new NotFoundException("Student with ID " + studentId + " was not found."));
         Subject subject = subjectRepository.findById(subjectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Subject with ID " + subjectId + " was not found."));
+                .orElseThrow(() -> new NotFoundException("Subject with ID " + subjectId + " was not found."));
         student.getSubjects().add(subject);
         studentRepository.save(student);
     }

@@ -15,10 +15,10 @@ import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class ErrorHandler {
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(NotFoundException ex, WebRequest request) {
         ErrorResponse error = new ErrorResponse(
                 LocalDateTime.now().toString(),
                 HttpStatus.NOT_FOUND.value(),
@@ -29,8 +29,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateResourceException(DuplicateResourceException ex, WebRequest request) {
+    @ExceptionHandler(DuplicateException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateResourceException(DuplicateException ex, WebRequest request) {
         ErrorResponse error = new ErrorResponse(
                 LocalDateTime.now().toString(),
                 HttpStatus.CONFLICT.value(),
