@@ -1,88 +1,214 @@
-# Spring Boot Security API 🚀
+# 🚀 Spring Boot REST API — Security, RBAC & Global Exception Handling
 
-## ⚙️ How to Clone and Run on Another Laptop
-
-### Requirements (Install these first)
-| Tool | Download Link |
-|---|---|
-| Java JDK 17 | https://adoptium.net |
-| Maven | https://maven.apache.org/download.cgi |
-| XAMPP (MySQL) | https://www.apachefriends.org |
-| Git | https://git-scm.com |
+A secure, production-grade Spring Boot 3 REST API featuring **JWT Authentication**, **Role-Based Access Control (RBAC)**, **BCrypt Password Hashing**, **Flyway Database Migrations**, and **Global Exception Handling**.
 
 ---
 
-### Step 1: Clone the Repository
-Open a terminal (Command Prompt or PowerShell) and run:
+## 📋 Quick Start Guide (Step-by-Step)
+
+Follow these simple steps to set up, run, and test the project on any computer.
+
+### Step 1: Prerequisites
+Ensure the following tools are installed:
+- **Java JDK 17** (e.g., [Eclipse Adoptium Temurin 17](https://adoptium.net/))
+- **XAMPP** (for MySQL database): [Download XAMPP](https://www.apachefriends.org/)
+- **VS Code** with the **Extension Pack for Java** (or IntelliJ IDEA)
+- **Postman**: [Download Postman](https://www.postman.com/downloads/)
+- **Git**: [Download Git](https://git-scm.com/)
+
+---
+
+### Step 2: Clone the Project
+Open PowerShell or Command Prompt:
 ```bash
 git clone https://github.com/denjiro-gen/SIL.git
 cd SIL
 ```
 
-### Step 2: Start MySQL via XAMPP
-1. Open **XAMPP Control Panel**
-2. Click **Start** next to **MySQL**
-3. Open **phpMyAdmin** at `http://localhost/phpmyadmin`
-4. Click **New** and create a database named exactly: `mydb_api`
+---
 
-### Step 3: Run the Application
-In the terminal (inside the SIL folder), run:
-```bash
-mvn spring-boot:run
-```
-Wait until you see this line in the console:
-```
-Tomcat initialized with port(s): 8080 (http)
-```
-The app will automatically create all the database tables and insert the test users for you!
-
-### Step 4: Test with Postman
-Use these default login credentials:
-
-| Role | Username | Password |
-|---|---|---|
-| Admin | admin | admin123 |
-| Student | alex_mercer | password123 |
-
-Send a `POST` request to `http://localhost:8080/api/auth/login` with the credentials above to get your JWT token. See `POSTMAN_TEST_GUIDE.txt` for the full testing steps.
+### Step 3: Start MySQL via XAMPP
+1. Open the **XAMPP Control Panel**.
+2. Click **Start** next to **MySQL** (and **Apache** if you use phpMyAdmin).
+   > ⚠️ **IMPORTANT**: **Do NOT start Tomcat in XAMPP!** Spring Boot has its own built-in Tomcat server that runs on port `8080`. Starting Tomcat in XAMPP will cause a *"Port 8080 was already in use"* error.
+3. Open your browser and go to: [http://localhost/phpmyadmin](http://localhost/phpmyadmin)
+4. Click **New** in the left sidebar.
+5. Create a new database named exactly:
+   ```
+   mydb_api
+   ```
+   *(Collation: utf8mb4_general_ci or default)*
 
 ---
 
+### Step 4: Configure Database Credentials (If Needed)
+Open `src/main/resources/application.properties`:
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/mydb_api?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=
+```
+- By default in XAMPP, `root` has **no password** (`spring.datasource.password=` is empty).
+- If your MySQL has a password, enter it after `spring.datasource.password=`.
 
-This is a backend REST API built with Spring Boot, MySQL, and Spring Security (JWT). It features Role-Based Access Control (RBAC) and clean global exception handling.
+---
 
-## 📂 Project Architecture (Java Folders Explained)
+### Step 5: Run the Application
 
-The source code inside `src/main/java/com/example/api/` is split into several packages (folders) following the standard **Spring Boot Layered Architecture**. Here is what every folder does:
+#### Option A: In VS Code (Recommended)
+1. Open VS Code: `File` → `Open Folder...` → select the `SIL` folder.
+2. In the file explorer, navigate to:
+   `src/main/java/com/example/api/ApiApplication.java`
+3. Click the **Run** or **Debug** button above `public static void main(String[] args)`.
+4. Wait for the terminal to print:
+   ```
+   Started ApiApplication in X.XXX seconds
+   ```
+   🎉 **The server is now running on `http://localhost:8080`!**
 
-### 1. `config` (Configuration)
-Contains settings that run when the application starts. 
-- Example: `DatabaseSeeder.java` sits here to automatically hash and insert the default Admin and Student passwords whenever you start the server.
+#### Option B: Using Maven in Terminal
+If you have Maven installed:
+```bash
+mvn spring-boot:run
+```
 
-### 2. `controller` (The API Endpoints)
-The entry point for the frontend or Postman. Controllers listen for HTTP requests (GET, POST, PUT, DELETE) at specific URLs (like `/api/students`). 
-- They don't do the heavy lifting; they just receive the request, hand it to the `service` layer, and then return the response back to the user.
+---
 
-### 3. `dto` (Data Transfer Objects)
-DTOs are simple templates used to format the data going **in** and **out** of your API.
-- For example, when creating a student, we don't need them to send an ID because the database generates it. We use a `StudentCreateDto` to specify that they only need to send a username, email, password, and name. It hides sensitive information (like passwords) from being sent back in responses.
+### Step 6: Database Auto-Migration & Seeding
+You do **not** need to manually create tables or insert SQL records!
+When the app starts:
+1. **Flyway** automatically runs migrations:
+   - `V1__Initial_Schema.sql` (Creates `courses`, `subjects`, `students`, `student_subjects`)
+   - `V2__Insert_Data.sql` (Seeds courses, subjects, and users)
+   - `V3__Add_Security_Fields.sql` (Ensures security columns `username`, `password`, `role` exist)
+2. **DatabaseSeeder** automatically hashes passwords with **BCrypt**:
+   - Default **ADMIN**: `admin` / `admin123`
+   - Default **STUDENT**: `alex_mercer` / `password123`
 
-### 4. `entity` (Database Tables)
-These classes represent the actual tables in your MySQL Database. 
-- A class called `Student` marked with `@Entity` tells Spring Boot to map it directly to the `students` table. The variables inside the class (like `id`, `name`) become the columns in that table.
+---
 
-### 5. `repository` (Database Access)
-This layer talks directly to the MySQL database.
-- It contains Java Interfaces that extend `JpaRepository`. Without writing any SQL queries yourself, Spring Boot automatically gives these files the ability to save, delete, find, and update entities in the database.
+### Step 7: Test with Postman
 
-### 6. `service` (Business Logic)
-This is where the actual "thinking" happens. 
-- Controllers pass data here. The Service layer runs checks (e.g., "Does this email already exist?"), handles logic, and tells the Repository what to save. This keeps the Controllers clean and focused only on web traffic.
+We have included a complete Postman collection ready to test all 10 endpoints!
 
-### 7. `security` (Authentication & Authorization)
-Handles all the JWT (JSON Web Token) generation and validation.
-- Contains the filters that check every single incoming request to see if the user provided a valid token in the Authorization header. It also defines which roles (`ADMIN` or `STUDENT`) are allowed to access which controllers.
+1. Open **Postman**.
+2. Click **Import** (top left) and select the file:
+   ```
+   Postman_Collection.json
+   ```
+3. Run the requests in this order:
+   1. **`POST Login (ADMIN)`** → Logs in as `admin`. Postman **automatically saves the JWT token** into the collection variable `{{adminToken}}`!
+   2. **`POST Login (STUDENT)`** → Logs in as `alex_mercer`. Automatically saves `{{studentToken}}`!
+   3. **`GET All Courses`** → Returns list of courses (Requires Admin).
+   4. **`GET All Subjects`** → Returns list of subjects (Requires Admin).
+   5. **`GET All Students`** → Returns list of students with enrolled courses & subjects (Requires Admin).
+   6. **`GET Student Self by ID`** → Returns student `id=2` (Allowed for Student).
+   7. **`PUT Enroll in Course`** → Assigns student to a course (Requires Admin).
+   8. **`PUT Enroll in Subject`** → Adds a subject to a student (Requires Admin).
+   9. **`POST Create Course / Subject / Student`** → Adds new records (Requires Admin).
 
-### 8. `exception` (Error Handling)
-Catches crashes and errors before they reach the user.
-- Instead of showing ugly Java stack traces when something goes wrong (like a user not being found), the `ErrorHandler` intercepts the crash and formats a clean, readable JSON error message (like a `404 Not Found` or `400 Bad Request`).
+See `POSTMAN_TEST_GUIDE.txt` for the full endpoint reference table, sample request bodies, and expected responses.
+
+---
+
+## 🔒 Role-Based Access Control (RBAC) Matrix
+
+| Method | Endpoint | Required Role | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/login` | **Public** (No Token) | Authenticates and returns JWT token |
+| `GET` | `/api/courses` | `ROLE_ADMIN` | List all courses |
+| `POST` | `/api/courses` | `ROLE_ADMIN` | Create a new course |
+| `GET` | `/api/courses/{id}` | `ROLE_ADMIN` | Get course by ID |
+| `GET` | `/api/subjects` | `ROLE_ADMIN` | List all subjects |
+| `POST` | `/api/subjects` | `ROLE_ADMIN` | Create a new subject |
+| `GET` | `/api/subjects/{id}` | `ROLE_ADMIN` | Get subject by ID |
+| `GET` | `/api/students` | `ROLE_ADMIN` | List all students |
+| `POST` | `/api/students` | `ROLE_ADMIN` | Register a new student |
+| `GET` | `/api/students/{id}` | `ROLE_ADMIN` or Owner `ROLE_STUDENT` | View student details (Students can only view their own profile) |
+| `PUT` | `/api/students/{id}/course/{courseId}` | `ROLE_ADMIN` | Enroll student in course |
+| `PUT` | `/api/students/{id}/subject/{subjectId}` | `ROLE_ADMIN` | Enroll student in subject |
+
+---
+
+## 🛡️ Standardized Error Response Format
+
+All error responses across the entire application follow a unified structure:
+
+```json
+{
+  "timestamp": "2026-10-11T17:16:52.039160900",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "You do not have permission to access this resource.",
+  "path": "/api/students"
+}
+```
+
+- **`400 Bad Request`**: Validation errors, malformed JSON, or missing required fields.
+- **`401 Unauthorized`**: Missing, invalid, or expired JWT token.
+- **`403 Forbidden`**: Role insufficient (e.g. Student trying to view Admin resources, or student viewing another student's profile).
+- **`404 Not Found`**: Entity (Student, Course, or Subject) does not exist in the database.
+- **`409 Conflict`**: Duplicate username/email or database integrity constraint violation.
+
+---
+
+## 🛠️ Common Troubleshooting
+
+### 1. `Port 8080 was already in use`
+- **Cause:** Tomcat is running in the XAMPP Control Panel, or another app is using port 8080.
+- **Fix:** In XAMPP Control Panel, click **Stop** next to Tomcat. Only **MySQL** (and Apache) should be running.
+
+### 2. `401 Unauthorized` on all requests
+- **Cause:** You did not include the JWT token or the token expired.
+- **Fix:** Run `POST Login (ADMIN)` or `POST Login (STUDENT)` in Postman to refresh your token.
+
+### 3. `Could not find or load main class com.example.api.ApiApplication`
+- **Cause:** Stale workspace build cache in VS Code.
+- **Fix:** In VS Code, press `Ctrl+Shift+P` → type `Java: Clean Language Server Workspace` → select `Restart and delete`. Then click **Run** on `ApiApplication.java`.
+
+---
+
+## 📂 Project Architecture
+
+The codebase follows the standard Spring Boot layered architecture:
+
+```
+src/main/java/com/example/api/
+├── ApiApplication.java          # Main Application Entry Point
+├── config/
+│   ├── ApplicationConfig.java   # PasswordEncoder, UserDetailsService, AuthenticationManager
+│   └── DatabaseSeeder.java      # BCrypt password seeder on application startup
+├── controller/                  # REST Controllers exposing HTTP endpoints
+│   ├── AuthController.java
+│   ├── CourseController.java
+│   ├── StudentController.java
+│   └── SubjectController.java
+├── dto/                         # Request and Response transfer objects
+│   ├── AuthRequest.java / AuthResponse.java
+│   ├── CourseCreateDto.java / CourseResponseDto.java
+│   ├── StudentCreateDto.java / StudentResponseDto.java
+│   └── SubjectCreateDto.java / SubjectResponseDto.java
+├── entity/                      # JPA Entities mapped to MySQL tables
+│   ├── Course.java
+│   ├── Student.java
+│   └── Subject.java
+├── exception/                   # Global exception handling & custom exceptions
+│   ├── ErrorHandler.java
+│   ├── ErrorResponse.java
+│   └── NotFoundException.java
+├── repository/                  # Spring Data JPA repositories
+│   ├── CourseRepository.java
+│   ├── StudentRepository.java
+│   └── SubjectRepository.java
+├── security/                    # Spring Security & JWT components
+│   ├── JwtAccessDeniedHandler.java  # Custom 403 Forbidden handler
+│   ├── JwtAuthEntryPoint.java       # Custom 401 Unauthorized handler
+│   ├── JwtAuthFilter.java           # JWT extraction and validation filter
+│   ├── JwtService.java              # Token generation and claims extraction
+│   ├── SecurityConfig.java          # Security filter chain and endpoint RBAC rules
+│   └── StudentSecurity.java         # ID ownership authorization evaluator
+└── service/                     # Business logic layer
+    ├── CourseService.java
+    ├── StudentService.java
+    └── SubjectService.java
+```
