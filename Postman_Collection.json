@@ -1,0 +1,506 @@
+{
+  "info": {
+    "name": "SIL - Spring Boot Security API",
+    "_postman_id": "sil-spring-boot-security-api",
+    "description": "Complete REST API with JWT Security, RBAC & Global Exception Handling.\n\n## Test Accounts\n- ADMIN: username=admin, password=admin123\n- STUDENT: username=alex_mercer, password=password123\n\n## How to Use\n1. Run 'POST Login (ADMIN)' - token is auto-saved to {{adminToken}}\n2. Run 'POST Login (STUDENT)' - token is auto-saved to {{studentToken}}\n3. Use any other request (tokens are set automatically)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "studentToken", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "AUTH",
+      "item": [
+        {
+          "name": "POST Login (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('adminToken', json.token);",
+                  "    pm.test('Login successful - token saved', () => pm.expect(json.token).to.be.a('string'));",
+                  "} else {",
+                  "    pm.test('Login failed', () => pm.expect(pm.response.code).to.eq(200));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "POST Login (STUDENT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('studentToken', json.token);",
+                  "    pm.test('Login successful - token saved', () => pm.expect(json.token).to.be.a('string'));",
+                  "} else {",
+                  "    pm.test('Login failed', () => pm.expect(pm.response.code).to.eq(200));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"alex_mercer\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "POST Login (Invalid - 401 Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns 401 Unauthorized', () => pm.expect(pm.response.code).to.eq(401));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has error format', () => {",
+                  "    pm.expect(json).to.have.property('timestamp');",
+                  "    pm.expect(json).to.have.property('status');",
+                  "    pm.expect(json).to.have.property('error');",
+                  "    pm.expect(json).to.have.property('message');",
+                  "    pm.expect(json).to.have.property('path');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"wrongpassword\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "COURSES (ADMIN only)",
+      "item": [
+        {
+          "name": "GET All Courses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.expect(pm.response.code).to.eq(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/courses", "host": ["{{baseUrl}}"], "path": ["api", "courses"] }
+          }
+        },
+        {
+          "name": "POST Create Course",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.expect(pm.response.code).to.eq(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has id and name', () => {",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('name');",
+                  "});",
+                  "pm.collectionVariables.set('newCourseId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BS Artificial Intelligence\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/courses", "host": ["{{baseUrl}}"], "path": ["api", "courses"] }
+          }
+        },
+        {
+          "name": "GET Courses as STUDENT (403 Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.expect(pm.response.code).to.eq(403));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has error format', () => {",
+                  "    pm.expect(json.status).to.eq(403);",
+                  "    pm.expect(json.error).to.eq('Forbidden');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/courses", "host": ["{{baseUrl}}"], "path": ["api", "courses"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "SUBJECTS (ADMIN only)",
+      "item": [
+        {
+          "name": "GET All Subjects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.expect(pm.response.code).to.eq(200));",
+                  "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/subjects", "host": ["{{baseUrl}}"], "path": ["api", "subjects"] }
+          }
+        },
+        {
+          "name": "POST Create Subject",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.expect(pm.response.code).to.eq(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has id and title', () => {",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('title');",
+                  "});",
+                  "pm.collectionVariables.set('newSubjectId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Machine Learning\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/subjects", "host": ["{{baseUrl}}"], "path": ["api", "subjects"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "STUDENTS",
+      "item": [
+        {
+          "name": "GET All Students (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.expect(pm.response.code).to.eq(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Returns array', () => pm.expect(json).to.be.an('array'));",
+                  "pm.test('Each student has id, fullName, email, course, subjects', () => {",
+                  "    json.forEach(s => {",
+                  "        pm.expect(s).to.have.property('id');",
+                  "        pm.expect(s).to.have.property('fullName');",
+                  "        pm.expect(s).to.have.property('email');",
+                  "        pm.expect(s).to.have.property('subjects');",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/students", "host": ["{{baseUrl}}"], "path": ["api", "students"] }
+          }
+        },
+        {
+          "name": "GET Student by ID - Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.expect(pm.response.code).to.eq(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has required fields', () => {",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('fullName');",
+                  "    pm.expect(json).to.have.property('email');",
+                  "    pm.expect(json).to.have.property('subjects');",
+                  "});",
+                  "pm.test('Subjects is array of strings', () => pm.expect(json.subjects).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/students/2", "host": ["{{baseUrl}}"], "path": ["api", "students", "2"] }
+          }
+        },
+        {
+          "name": "GET Own Profile (STUDENT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.expect(pm.response.code).to.eq(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('STUDENT can access own profile', () => pm.expect(json.id).to.eq(2));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/students/2", "host": ["{{baseUrl}}"], "path": ["api", "students", "2"] }
+          }
+        },
+        {
+          "name": "GET Other Profile (STUDENT - 403 Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.expect(pm.response.code).to.eq(403));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has Forbidden error', () => pm.expect(json.error).to.eq('Forbidden'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/students/1", "host": ["{{baseUrl}}"], "path": ["api", "students", "1"] }
+          }
+        },
+        {
+          "name": "POST Create Student (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.expect(pm.response.code).to.eq(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Juan Dela Cruz\",\n  \"email\": \"juan.delacruz@example.com\",\n  \"username\": \"juan_delacruz\",\n  \"password\": \"securepass123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/students", "host": ["{{baseUrl}}"], "path": ["api", "students"] }
+          }
+        },
+        {
+          "name": "POST Create Student (409 Duplicate Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.expect(pm.response.code).to.eq(409));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has Conflict error format', () => {",
+                  "    pm.expect(json.status).to.eq(409);",
+                  "    pm.expect(json.error).to.eq('Conflict');",
+                  "    pm.expect(json).to.have.property('timestamp');",
+                  "    pm.expect(json).to.have.property('message');",
+                  "    pm.expect(json).to.have.property('path');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicate Alex\",\n  \"email\": \"alex.mercer@example.com\",\n  \"username\": \"alex_mercer\",\n  \"password\": \"anotherpass\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/students", "host": ["{{baseUrl}}"], "path": ["api", "students"] }
+          }
+        },
+        {
+          "name": "POST Create Student (400 Validation Test)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.expect(pm.response.code).to.eq(400));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has Bad Request error format', () => {",
+                  "    pm.expect(json.status).to.eq(400);",
+                  "    pm.expect(json.error).to.eq('Bad Request');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"missingfields@test.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/students", "host": ["{{baseUrl}}"], "path": ["api", "students"] }
+          }
+        },
+        {
+          "name": "PUT Assign Course to Student (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.expect(pm.response.code).to.eq(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/students/2/course/2", "host": ["{{baseUrl}}"], "path": ["api", "students", "2", "course", "2"] }
+          }
+        },
+        {
+          "name": "PUT Enroll Subject to Student (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.expect(pm.response.code).to.eq(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/students/2/subject/4", "host": ["{{baseUrl}}"], "path": ["api", "students", "2", "subject", "4"] }
+          }
+        },
+        {
+          "name": "GET Student 404 Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.expect(pm.response.code).to.eq(404));",
+                  "var json = pm.response.json();",
+                  "pm.test('Has Not Found error format', () => {",
+                  "    pm.expect(json.status).to.eq(404);",
+                  "    pm.expect(json.error).to.eq('Not Found');",
+                  "    pm.expect(json).to.have.property('timestamp');",
+                  "    pm.expect(json).to.have.property('message');",
+                  "    pm.expect(json).to.have.property('path');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/students/999", "host": ["{{baseUrl}}"], "path": ["api", "students", "999"] }
+          }
+        }
+      ]
+    }
+  ]
+}

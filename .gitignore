@@ -12,5 +12,3 @@ logs/
 *.iml
 *.iws
 
-# User asked not to include the DB (excluding migration scripts)
-src/main/resources/db/

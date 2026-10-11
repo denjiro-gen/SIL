@@ -13,12 +13,15 @@ import com.example.api.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class StudentService {
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
@@ -35,6 +38,7 @@ public class StudentService {
         return mapToDto(student);
     }
 
+    @Transactional
     public void createStudent(StudentCreateDto dto) {
         if (studentRepository.existsByEmail(dto.getEmail())) {
             throw new DuplicateException("Email '" + dto.getEmail() + "' is already registered.");
@@ -51,6 +55,7 @@ public class StudentService {
         studentRepository.save(student);
     }
 
+    @Transactional
     public void assignCourse(Long studentId, Long courseId) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new NotFoundException("Student with ID " + studentId + " was not found."));
@@ -60,6 +65,7 @@ public class StudentService {
         studentRepository.save(student);
     }
 
+    @Transactional
     public void enrollSubject(Long studentId, Long subjectId) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new NotFoundException("Student with ID " + studentId + " was not found."));
@@ -79,6 +85,8 @@ public class StudentService {
         }
         if (student.getSubjects() != null) {
             dto.setSubjects(student.getSubjects().stream().map(Subject::getTitle).collect(Collectors.toList()));
+        } else {
+            dto.setSubjects(new ArrayList<>());
         }
         return dto;
     }

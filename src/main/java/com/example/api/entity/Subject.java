@@ -1,13 +1,20 @@
 package com.example.api.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.EqualsAndHashCode;
 import java.util.Set;
+import java.util.HashSet;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "subjects")
-@Data
+@Getter
+@Setter
+@ToString(exclude = "students")
+@EqualsAndHashCode(of = "id")
 public class Subject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,5 +25,5 @@ public class Subject {
     
     @ManyToMany(mappedBy = "subjects")
     @JsonIgnore
-    private Set<Student> students;
+    private Set<Student> students = new HashSet<>();
 }

@@ -1,0 +1,245 @@
+========================================================================
+ SIL Spring Boot REST API - Postman Testing Guide
+ Hands-On Activity: Spring Boot Security, RBAC & Global Exception Handling
+========================================================================
+
+PREREQUISITES
+-------------
+1. Spring Boot app running on http://localhost:8080
+   - Use VS Code (Java Extension Pack) > Run "ApiApplication.java"
+   - OR from terminal: mvn spring-boot:run
+
+2. MySQL running with database "mydb_api"
+   - XAMPP: Start Apache + MySQL from XAMPP Control Panel
+
+3. Import Postman_Collection.json into Postman
+   - Open Postman > Import > Choose Postman_Collection.json
+
+
+========================================================================
+ STEP-BY-STEP TESTING GUIDE
+========================================================================
+
+STEP 1: LOGIN AS ADMIN
+-----------------------
+Request : POST /api/auth/login
+Body    :
+  {
+    "username": "admin",
+    "password": "admin123"
+  }
+Expected: 200 OK
+Response:
+  {
+    "token": "eyJhbGci...",
+    "type": "Bearer"
+  }
+✅ The Postman collection auto-saves this token to {{adminToken}}
+
+
+STEP 2: LOGIN AS STUDENT
+--------------------------
+Request : POST /api/auth/login
+Body    :
+  {
+    "username": "alex_mercer",
+    "password": "password123"
+  }
+Expected: 200 OK
+✅ The Postman collection auto-saves this token to {{studentToken}}
+
+
+========================================================================
+ ENDPOINT REFERENCE TABLE (10 Required Endpoints)
+========================================================================
+
+ #  | METHOD | URL                                      | Auth     | Access
+----|--------|------------------------------------------|----------|------------------
+ 1  | POST   | /api/auth/login                          | None     | Public
+ 2  | GET    | /api/courses                             | Required | ADMIN only
+ 3  | POST   | /api/courses                             | Required | ADMIN only
+ 4  | GET    | /api/subjects                            | Required | ADMIN only
+ 5  | POST   | /api/subjects                            | Required | ADMIN only
+ 6  | GET    | /api/students                            | Required | ADMIN only
+ 7  | GET    | /api/students/{id}                       | Required | ADMIN or own STUDENT
+ 8  | POST   | /api/students                            | Required | ADMIN only
+ 9  | PUT    | /api/students/{studentId}/course/{id}    | Required | ADMIN only
+ 10 | PUT    | /api/students/{studentId}/subject/{id}   | Required | ADMIN only
+
+
+========================================================================
+ MANUAL POSTMAN SETUP (if not using collection)
+========================================================================
+
+Authorization Header (for all protected endpoints):
+  Key:   Authorization
+  Value: Bearer <paste your token here>
+
+
+ENDPOINT 2: GET All Courses
+  - Method: GET
+  - URL: http://localhost:8080/api/courses
+  - Auth: ADMIN token
+  - Expected: 200 OK → [{"id":1,"name":"BS Computer Science"},...]
+
+
+ENDPOINT 3: POST Create Course
+  - Method: POST
+  - URL: http://localhost:8080/api/courses
+  - Auth: ADMIN token
+  - Body (JSON): {"name": "BS Information Technology"}
+  - Expected: 201 Created → {"id":3,"name":"BS Information Technology"}
+
+
+ENDPOINT 4: GET All Subjects
+  - Method: GET
+  - URL: http://localhost:8080/api/subjects
+  - Auth: ADMIN token
+  - Expected: 200 OK → [{"id":1,"title":"Java Programming"},...]
+
+
+ENDPOINT 5: POST Create Subject
+  - Method: POST
+  - URL: http://localhost:8080/api/subjects
+  - Auth: ADMIN token
+  - Body (JSON): {"title": "Machine Learning"}
+  - Expected: 201 Created → {"id":4,"title":"Machine Learning"}
+
+
+ENDPOINT 6: GET All Students
+  - Method: GET
+  - URL: http://localhost:8080/api/students
+  - Auth: ADMIN token
+  - Expected: 200 OK → [{id, fullName, email, course, subjects:[...]},...]
+
+
+ENDPOINT 7: GET Student by ID
+  a) As ADMIN (any student):
+     - URL: http://localhost:8080/api/students/2
+     - Auth: ADMIN token
+     - Expected: 200 OK
+
+  b) As STUDENT (own profile only):
+     - URL: http://localhost:8080/api/students/2  ← (alex_mercer is ID 2)
+     - Auth: STUDENT token
+     - Expected: 200 OK
+
+  c) As STUDENT (another student's profile):
+     - URL: http://localhost:8080/api/students/1
+     - Auth: STUDENT token
+     - Expected: 403 Forbidden
+
+
+ENDPOINT 8: POST Create Student
+  - Method: POST
+  - URL: http://localhost:8080/api/students
+  - Auth: ADMIN token
+  - Body (JSON):
+    {
+      "name": "Juan Dela Cruz",
+      "email": "juan@example.com",
+      "username": "juan_dc",
+      "password": "securepass123"
+    }
+  - Expected: 201 Created (empty body)
+
+
+ENDPOINT 9: PUT Assign Course to Student
+  - Method: PUT
+  - URL: http://localhost:8080/api/students/2/course/1
+  - Auth: ADMIN token
+  - Body: (none)
+  - Expected: 200 OK
+
+
+ENDPOINT 10: PUT Enroll Student in Subject
+  - Method: PUT
+  - URL: http://localhost:8080/api/students/2/subject/3
+  - Auth: ADMIN token
+  - Body: (none)
+  - Expected: 200 OK
+
+
+========================================================================
+ ERROR RESPONSE TESTING
+========================================================================
+
+TEST A: 401 Unauthorized (no/invalid token)
+  - Any protected endpoint without Authorization header
+  - Expected: 401 + {"timestamp":"...","status":401,"error":"Unauthorized","message":"...","path":"..."}
+
+TEST B: 403 Forbidden (wrong role)
+  - STUDENT token hitting ADMIN-only endpoint
+  - Example: GET http://localhost:8080/api/courses with STUDENT token
+  - Expected: 403 + {"timestamp":"...","status":403,"error":"Forbidden","message":"...","path":"..."}
+
+TEST C: 404 Not Found
+  - GET http://localhost:8080/api/students/999
+  - Expected: 404 + {"timestamp":"...","status":404,"error":"Not Found","message":"Student with ID 999 was not found.","path":"..."}
+
+TEST D: 409 Conflict (duplicate)
+  - POST /api/students with existing email or username
+  - Expected: 409 + {"timestamp":"...","status":409,"error":"Conflict","message":"Email '...' is already registered.","path":"..."}
+
+TEST E: 400 Bad Request (validation fail)
+  - POST /api/students with missing required fields
+  - Body: {"email":"test@test.com"}  ← missing name, username, password
+  - Expected: 400 + {"timestamp":"...","status":400,"error":"Bad Request","message":"Name is required, ...","path":"..."}
+
+
+========================================================================
+ SAMPLE DATA IN DATABASE
+========================================================================
+
+COURSES (mydb_api.courses):
+  ID 1 → BS Computer Science
+  ID 2 → BS Cybersecurity
+
+SUBJECTS (mydb_api.subjects):
+  ID 1 → Java Programming
+  ID 2 → Database Management Systems
+  ID 3 → Cloud Computing
+
+STUDENTS (mydb_api.students):
+  ID 1 → admin         (ROLE_ADMIN)   | username: admin        | pass: admin123
+  ID 2 → alex_mercer   (ROLE_STUDENT) | username: alex_mercer  | pass: password123
+
+
+========================================================================
+ FLYWAY MIGRATION HISTORY
+========================================================================
+
+V1__Initial_Schema.sql   → Creates courses, subjects, students, student_subjects tables
+V2__Insert_Data.sql      → Seeds initial courses, subjects, and student data
+V3__Add_Security_Fields.sql → Ensures username/password/role columns are properly configured
+
+
+========================================================================
+ CLONING & RUNNING ON ANOTHER MACHINE
+========================================================================
+
+1. Clone:
+   git clone https://github.com/denjiro-gen/SIL.git
+   cd SIL
+
+2. Install Requirements:
+   - Java 17 (Eclipse Adoptium / Temurin)
+   - Maven 3.8+
+   - MySQL / XAMPP (MariaDB)
+
+3. Create database:
+   mysql -u root -p
+   CREATE DATABASE mydb_api;
+
+4. Update src/main/resources/application.properties:
+   spring.datasource.password=YOUR_MYSQL_PASSWORD  ← if you have a password
+
+5. Run:
+   mvn spring-boot:run
+   OR open in VS Code and run ApiApplication.java
+
+6. Flyway auto-runs all 3 migrations (V1, V2, V3)
+   Seeder ensures admin and alex_mercer credentials are BCrypt-hashed
+
+7. Test: http://localhost:8080/api/auth/login
+========================================================================
